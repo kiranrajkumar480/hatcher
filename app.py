@@ -122,14 +122,14 @@ def main():
 
     # 🧠 AI Startup Idea Generator Section
     st.markdown("---")
-    st.header("🧠 AI Startup Idea Generator")
+    st.header("AI Startup Idea Generator")
     st.markdown("Describe a market or tech space you're curious about. Let AI generate startup ideas!")
 
     user_prompt = st.text_input("💬 What market or tech are you interested in?")
 
     if st.button("Generate Ideas"):
         if user_prompt.strip():
-            with st.spinner("🤖 Thinking..."):
+            with st.spinner("Thinking..."):
                 response = generate_ai_ideas(user_prompt.strip())
                 st.markdown("### 💡 AI-Generated Ideas")
                 st.markdown(response)
@@ -144,7 +144,8 @@ def main():
     with tab1:
         st.subheader("Generate Startup Ideas Using AI")
         user_prompt = st.text_input("Describe a market or tech you’re interested in:")
-        if st.button("Generate Ideas"):
+        if st.button("Generate Ideas", key="generate_ideas_button"):
+
             if user_prompt.strip():
                 # Call the AI idea generator
                 ai_response = generate_ai_ideas(user_prompt.strip())
