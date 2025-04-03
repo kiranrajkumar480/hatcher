@@ -59,28 +59,19 @@ submitted_ideas = [
 
 # 2. Configure OpenAI (Placeholder) --------------------------------------------
 # In a real scenario, you must set your API key:
-# openai.api_key = "YOUR_OPENAI_API_KEY"
+openai.api_key = "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"
 
 def generate_ai_ideas(user_prompt):
-    """
-    Example function to call OpenAI GPT API.
-    For demonstration, we mock the response with sample text.
-    Replace the mock response with an actual API call.
-    """
-    # If using real OpenAI calls, you might do:
-    #
-    # response = openai.ChatCompletion.create(
-    #     model="gpt-3.5-turbo",
-    #     messages=[
-    #         {"role": "system", "content": "You are a helpful startup idea generator."},
-    #         {"role": "user", "content": user_prompt}
-    #     ],
-    #     max_tokens=200
-    # )
-    #
-    # answer = response["choices"][0]["message"]["content"]
-    #
-    # For demonstration, we'll return a static string:
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  # or "gpt-4" if you have access
+        messages=[
+            {"role": "system", "content": "You are a helpful startup idea generator."},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.7,
+        max_tokens=300
+    )
+    return response["choices"][0]["message"]["content"]
     answer = (
         f"**AI-Generated Startup Ideas for '{user_prompt}'**\n\n"
         "- **Idea 1:** Build a decentralized supply chain tracking system with blockchain.\n"
