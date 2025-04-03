@@ -120,6 +120,23 @@ def main():
             })
             st.success("Your idea has been submitted!")
 
+    # 🧠 AI Startup Idea Generator Section
+    st.markdown("---")
+    st.header("🧠 AI Startup Idea Generator")
+    st.markdown("Describe a market or tech space you're curious about. Let AI generate startup ideas!")
+
+    user_prompt = st.text_input("💬 What market or tech are you interested in?")
+
+    if st.button("Generate Ideas"):
+        if user_prompt.strip():
+            with st.spinner("🤖 Thinking..."):
+                response = generate_ai_ideas(user_prompt.strip())
+                st.markdown("### 💡 AI-Generated Ideas")
+                st.markdown(response)
+        else:
+            st.warning("Please enter a topic before clicking Generate.")
+
+
     # Tabs for main content
     tab1, tab2, tab3 = st.tabs(["1. AI Idea Generator", "2. Public Challenges", "3. View Submitted Ideas"])
 
