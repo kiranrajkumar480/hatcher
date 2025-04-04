@@ -13,7 +13,7 @@ db = TinyDB("db/pitches.json")
 # --------------------------------------------------------------------------------
 # 1. Groq API Setup (Hard-coded for DEMO — in production, store in st.secrets!)
 # --------------------------------------------------------------------------------
-GROQ_API_KEY = "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"  # Replace with your actual key
+GROQ_API_KEY = "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"  # Replace with your actual key
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # --------------------------------------------------------------------------------
