@@ -97,7 +97,7 @@ def generate_ai_ideas(prompt):
 def main():
     st.set_page_config(page_title="Hatcher MVP", layout="wide")
 
-    st.title("Hatcher: Startup Problem + Idea Discovery")
+    st.title("Hatcher: Problems for Solutions")
     st.markdown(
         "**Hatcher** is your bridge between market research, idea validation, "
         "and direct investor connections. Explore curated challenges, discover "
