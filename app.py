@@ -1,4 +1,4 @@
-rom openai import OpenAI
+from openai import OpenAI
 import streamlit as st
 
 # --- 1. Initialize OpenAI Client with v1 SDK ---
