@@ -1,5 +1,14 @@
 import streamlit as st
 import requests
+import os
+import random
+
+# NEW LINES FOR TINYDB
+from tinydb import TinyDB, Query
+
+# Ensure db folder exists
+os.makedirs("db", exist_ok=True)
+db = TinyDB("db/pitches.json")
 
 # --------------------------------------------------------------------------------
 # 1. Groq API Setup (Hard-coded for DEMO — in production, store in st.secrets!)
@@ -116,6 +125,31 @@ def analyze_pitches_with_ai(all_pitches_text):
         return response.json()["choices"][0]["message"]["content"]
     except Exception as e:
         return f"❌ Error analyzing pitches: {e}"
+
+# NEW HELPER: Save pitch to TinyDB
+def save_pitch_to_db(founder, vc, pitch_text):
+    """ Persist pitch to TinyDB so we don't lose it. """
+    PitchTable = db.table("pitches")
+    PitchTable.insert({
+        "founder_name": founder,
+        "vc_name": vc,
+        "pitch": pitch_text,
+        "status": "Pending"
+    })
+
+def get_all_pitches_from_db():
+    """ Return all pitches from TinyDB. """
+    PitchTable = db.table("pitches")
+    return PitchTable.all()
+
+def update_pitch_status_in_db(founder, pitch_text, new_status):
+    """ Update pitch status in TinyDB. """
+    PitchTable = db.table("pitches")
+    query = Query()
+    PitchTable.update(
+        {"status": new_status},
+        (query.founder_name == founder) & (query.pitch == pitch_text)
+    )
 
 # --------------------------------------------------------------------------------
 # 4. Streamlit App
@@ -244,12 +278,16 @@ def main():
 
             if st.button("Submit Pitch"):
                 if selected_vc and pitch_text.strip():
+                    # Existing In-Memory
                     pitch_submissions.append({
                         "founder_name": user_name,
                         "vc_name": selected_vc,
                         "pitch": pitch_text.strip(),
                         "status": "Pending"
                     })
+                    # NEW: Save to TinyDB
+                    save_pitch_to_db(user_name, selected_vc, pitch_text.strip())
+
                     st.success(f"Pitch submitted to {selected_vc}! We'll mark it as 'Pending' until they reply.")
                 else:
                     st.warning("Please select a VC and enter your pitch.")
@@ -257,11 +295,24 @@ def main():
             # Show your pitches and statuses
             st.write("---")
             st.subheader("Your Pitch Status")
-            my_pitches = [p for p in pitch_submissions if p["founder_name"] == user_name]
-            if len(my_pitches) == 0:
+            my_pitches_mem = [p for p in pitch_submissions if p["founder_name"] == user_name]
+            # Also load from DB in case we want to show them
+            all_db_pitches = get_all_pitches_from_db()
+            my_pitches_db = [p for p in all_db_pitches if p["founder_name"] == user_name]
+
+            # Combine them or just show memory for the demo
+            if len(my_pitches_mem) == 0 and len(my_pitches_db) == 0:
                 st.write("No pitches sent yet.")
             else:
-                for idx, pitch in enumerate(my_pitches):
+                st.markdown("**Pitches (In-Memory):**")
+                for idx, pitch in enumerate(my_pitches_mem):
+                    st.markdown(f"**VC:** {pitch['vc_name']}")
+                    st.markdown(f"**Pitch:** {pitch['pitch']}")
+                    st.markdown(f"**Status:** {pitch['status']}")
+                    st.write("---")
+
+                st.markdown("**Pitches (Saved in TinyDB):**")
+                for idx, pitch in enumerate(my_pitches_db):
                     st.markdown(f"**VC:** {pitch['vc_name']}")
                     st.markdown(f"**Pitch:** {pitch['pitch']}")
                     st.markdown(f"**Status:** {pitch['status']}")
@@ -302,38 +353,67 @@ def main():
             st.header("Analyze Incoming Pitches")
             st.write("View all founder-submitted pitches, approve or reject them, or use AI to get analysis.")
 
-            # Show all pitches
-            pending_pitches = [p for p in pitch_submissions if p["vc_name"] != None and p["vc_name"] != ""]
-            if len(pending_pitches) == 0:
+            # Merge old in-memory with DB
+            all_db = get_all_pitches_from_db()
+            # Filter only those addressed to this VC
+            pending_pitches_db = [p for p in all_db if p["vc_name"] == user_name]
+
+            # Show all pitches (from in-memory + DB)
+            # We'll unify with the existing memory approach:
+            combined_in_mem = [p for p in pitch_submissions if p["vc_name"] == user_name]
+            # Merge them (in real code you'd unify or rely solely on DB)
+            combined_all = combined_in_mem + pending_pitches_db
+
+            # Remove duplicates (just in case):
+            unique_pitches = []
+            seen = set()
+            for p in combined_all:
+                signature = (p["founder_name"], p["vc_name"], p["pitch"])
+                if signature not in seen:
+                    unique_pitches.append(p)
+                    seen.add(signature)
+
+            if len(unique_pitches) == 0:
                 st.write("No pitches to analyze yet.")
             else:
                 # Option: Use AI to summarize all
                 if st.button("Use AI to Summarize & Filter All Pitches"):
                     with st.spinner("Analyzing with AI..."):
-                        # Build a text block listing all pitches
                         text_for_ai = "\n\n".join([
                             f"Founder: {p['founder_name']}\nPitch: {p['pitch']}\nCurrentStatus: {p['status']}"
-                            for p in pending_pitches
+                            for p in unique_pitches
                         ])
                         ai_feedback = analyze_pitches_with_ai(text_for_ai)
                         st.markdown("### AI Feedback & Recommendations")
                         st.write(ai_feedback)
 
+                        # NEW: Made-Up Additional Analysis
+                        total_pitches = len(unique_pitches)
+                        best_pitch = random.choice(unique_pitches)
+                        st.markdown(f"**We found {total_pitches} total pitches.**")
+                        st.markdown(f"**Random 'Best Pitch':** {best_pitch['pitch']} from Founder {best_pitch['founder_name']}")
+                        st.markdown("*(This is a made-up analysis for demonstration!)*")
+
                 st.write("---")
-                for idx, pitch in enumerate(pending_pitches):
+                # Now display each pitch with Approve/Reject
+                for idx, pitch in enumerate(unique_pitches):
                     st.markdown(f"**From:** {pitch['founder_name']}")
                     st.markdown(f"**Pitch:** {pitch['pitch']}")
-                    st.markdown(f"**Status:** {pitch['status']}")
+                    status_text = pitch.get("status", "Pending")
+                    st.markdown(f"**Status:** {status_text}")
 
-                    if pitch["status"] == "Pending":
+                    if status_text == "Pending":
                         if st.button(f"Approve Pitch #{idx+1}", key=f"approve_{idx}"):
-                            pitch_submissions[idx]['status'] = "Approved"
+                            pitch["status"] = "Approved"
+                            # Update DB as well
+                            update_pitch_status_in_db(pitch["founder_name"], pitch["pitch"], "Approved")
                             st.success(f"Approved Pitch #{idx+1}")
                         if st.button(f"Reject Pitch #{idx+1}", key=f"reject_{idx}"):
-                            pitch_submissions[idx]['status'] = "Rejected"
+                            pitch["status"] = "Rejected"
+                            update_pitch_status_in_db(pitch["founder_name"], pitch["pitch"], "Rejected")
                             st.warning(f"Rejected Pitch #{idx+1}")
                     else:
-                        st.info(f"Pitch is already {pitch['status']}")
+                        st.info(f"Pitch is already {status_text}")
                     st.write("---")
 
         # ----------------------------------------------------------------
