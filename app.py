@@ -4,7 +4,7 @@ import requests
 # --------------------------------------------------------------------------------
 # 1. Groq API Setup (Hard-coded for DEMO — in production, store in st.secrets!)
 # --------------------------------------------------------------------------------
-GROQ_API_KEY = "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"  # Replace with your actual key
+GROQ_API_KEY = "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"  # Replace with your actual key
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # --------------------------------------------------------------------------------
