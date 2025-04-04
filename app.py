@@ -2,7 +2,7 @@ from openai import OpenAI
 import streamlit as st
 
 # --- 1. Initialize OpenAI Client with v1 SDK ---
-client = OpenAI(api_key="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")  # replace with st.secrets["OPENAI_API_KEY"] on Streamlit Cloud
+client = OpenAI(api_key="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")  # replace with st.secrets["OPENAI_API_KEY"] on Streamlit Cloud
 
 # --- 2. Mock Data ----------------------------------------------------------------
 
