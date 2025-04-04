@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # --- 1. Groq API Setup ------------------------------------------------------------
-GROQ_API_KEY = st.secrets["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"]  # Add this in Streamlit Cloud Secrets
+GROQ_API_KEY = ["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"]  # Add this in Streamlit Cloud Secrets
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # --- 2. Mock Data ------------------------------------------------------------------
