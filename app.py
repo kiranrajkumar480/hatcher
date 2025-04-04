@@ -1,7 +1,7 @@
 import streamlit as st
 import openai
 
-# 1. Mock Data -----------------------------------------------------------------
+# --- 1. Mock Data ----------------------------------------------------------------
 
 # Mock VC data
 vc_list = [
@@ -11,7 +11,7 @@ vc_list = [
     {"name": "FinFlow Capital", "focus": "Fintech/Blockchain"}
 ]
 
-# Mock challenges (public startup problems)
+# Mock challenges (example “VC-curated” public startup problems)
 challenges = [
     {
         "title": "AI-Powered Healthcare Diagnosis",
@@ -39,7 +39,7 @@ challenges = [
     }
 ]
 
-# List to hold user-submitted ideas (we'll store them in memory for demo)
+# Mock user-submitted solutions/ideas (in-memory only for demo)
 submitted_ideas = [
     {
         "title": "Instant Doc AI",
@@ -57,56 +57,69 @@ submitted_ideas = [
     }
 ]
 
-# 2. Configure OpenAI (Placeholder) --------------------------------------------
-# In a real scenario, you must set your API key:
-openai.api_key = "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"
+# --- 2. Configure OpenAI ----------------------------------------------------------
+# In real production usage, store the key in secrets or env variables, not hard-coded.
+openai.api_key = "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"  # <--- Replace with your actual key or st.secrets["OPENAI_API_KEY"]
 
-def generate_ai_ideas(user_prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # or "gpt-4" if you have access
-        messages=[
-            {"role": "system", "content": "You are a helpful startup idea generator."},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.7,
-        max_tokens=300
-    )
-    return response["choices"][0]["message"]["content"]
-    answer = (
-        f"**AI-Generated Startup Ideas for '{user_prompt}'**\n\n"
-        "- **Idea 1:** Build a decentralized supply chain tracking system with blockchain.\n"
-        "- **Idea 2:** Create an AI-driven supplier risk analysis platform.\n"
-        "- **Idea 3:** Offer a next-gen logistic route optimization service with real-time data."
-    )
-    return answer
+def generate_ai_ideas(user_prompt: str) -> str:
+    """
+    Sends the user prompt to GPT (e.g. gpt-3.5-turbo) to get a list of potential 
+    real-world problems in that domain. This is a simplified example.
+    """
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # or "gpt-4" if you have access
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI that researches startup problems by analyzing hundreds "
+                        "of articles and news. Provide validated or emerging problems in the given domain. "
+                        "Make them specific, with a sense of urgency or impact."
+                    )
+                },
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=300
+        )
+        return response["choices"][0]["message"]["content"]
+    except Exception as e:
+        # Fallback or error
+        return f"Error generating problems: {e}"
 
-
-# 3. Streamlit Layout ----------------------------------------------------------
-
+# --- 3. Streamlit Layout ----------------------------------------------------------
 def main():
     st.set_page_config(page_title="Hatcher MVP", layout="wide")
 
     # Title and intro
     st.title("Hatcher: Startup Problem + Idea Discovery")
     st.markdown(
-        "A platform that **curates real-world startup problems** using AI + trend signals + market data, "
-        "matching them to **aspiring founders**, **investors/VCs**, and **operators** who want to collaborate."
+        """
+        **Hatcher** is a platform that combines **AI research**, **VC insights**, and **community collaboration** to:
+        - Uncover **unique, validated problems** for aspiring founders
+        - Allow **VCs** to propose or scout problems and solutions
+        - Match solutions and ideas with potential investors
+        - Provide a **public forum** where founders can post solutions anonymously and VCs can pledge interest
+        """
     )
 
-    # Sidebar with mock VCs
+    st.write("---")
+
+    # --- Sidebar with mock VCs ---
     st.sidebar.title("🔍 Investor Focus")
-    st.sidebar.write("Meet the mock investor groups:")
+    st.sidebar.write("Meet our example investor groups:")
     for vc in vc_list:
         st.sidebar.markdown(f"- **{vc['name']}**: {vc['focus']}")
 
     st.sidebar.write("---")
-    st.sidebar.title("💼 Submit Your Idea")
-    st.sidebar.write("Share your startup idea below:")
+    st.sidebar.title("💼 Submit Your Solution")
+    st.sidebar.write("Already have a startup idea or solution to a problem? Share it here!")
 
-    # Idea submission form in sidebar
+    # Sidebar form: Submit a new idea
     with st.sidebar.form("idea_submission_form", clear_on_submit=True):
-        new_idea_title = st.text_input("Idea Title")
-        new_idea_description = st.text_area("Idea Description")
+        new_idea_title = st.text_input("Solution/Idea Title")
+        new_idea_description = st.text_area("Describe your solution")
         new_idea_tags = st.text_input("Tags (comma-separated)")
         submit_idea_button = st.form_submit_button("Submit Idea")
 
@@ -118,65 +131,62 @@ def main():
                 "investor_backed": False,
                 "tags": [tag.strip() for tag in new_idea_tags.split(",") if tag.strip()]
             })
-            st.success("Your idea has been submitted!")
+            st.success("Your solution/idea has been submitted!")
 
-    # 🧠 AI Startup Idea Generator Section
-    st.markdown("---")
-    st.header("AI Startup Idea Generator")
-    st.markdown("Describe a market or tech space you're curious about. Let AI generate startup ideas!")
+    # --- TABS: (1) AI Problem Finder, (2) Public Challenges, (3) View Submissions ---
+    tab1, tab2, tab3 = st.tabs([
+        "1. AI Problem Finder",
+        "2. Public Challenges",
+        "3. View Submitted Solutions"
+    ])
 
-    user_prompt = st.text_input("💬 What market or tech are you interested in?")
-
-    if st.button("Generate Ideas"):
-        if user_prompt.strip():
-            with st.spinner("Thinking..."):
-                response = generate_ai_ideas(user_prompt.strip())
-                st.markdown("### 💡 AI-Generated Ideas")
-                st.markdown(response)
-        else:
-            st.warning("Please enter a topic before clicking Generate.")
-
-
-    # Tabs for main content
-    tab1, tab2, tab3 = st.tabs(["1. AI Idea Generator", "2. Public Challenges", "3. View Submitted Ideas"])
-
-    # 3.1. AI Idea Generator tab -----------------------------------------------
+    # --- Tab 1: AI Problem Finder ---
     with tab1:
-        st.subheader("Generate Startup Ideas Using AI")
-        user_prompt = st.text_input("Describe a market or tech you’re interested in:")
-        if st.button("Generate Ideas", key="generate_ideas_button"):
+        st.subheader("Discover a Real-World Problem")
+        st.markdown(
+            "Need a **unique problem** for your next startup? Let our AI scour "
+            "articles, news, and trends to propose **pressing, emerging** challenges."
+        )
 
+        user_prompt = st.text_input(
+            "Enter a market/tech domain (e.g. 'fintech for the unbanked', 'edge AI in healthcare')",
+            key="problem_prompt_input"
+        )
+        if st.button("Find Problems", key="problem_finder_button"):
             if user_prompt.strip():
-                # Call the AI idea generator
-                ai_response = generate_ai_ideas(user_prompt.strip())
-                st.markdown(ai_response)
+                with st.spinner("AI is researching..."):
+                    response = generate_ai_ideas(user_prompt.strip())
+                    st.markdown("### Potential Problems to Solve")
+                    st.write(response)
             else:
-                st.warning("Please enter a topic or market to generate ideas.")
+                st.warning("Please enter a domain or market to find problems.")
 
-    # 3.2. Public Challenges tab -----------------------------------------------
+    # --- Tab 2: Public Challenges ---
     with tab2:
-        st.subheader("Explore Public Startup Challenges")
-        st.markdown("These are crowdsourced or curated challenges seeking solutions:")
+        st.subheader("VC-Curated Public Challenges")
+        st.markdown(
+            "Here are **problems** curated or posted by our partner VCs. "
+            "Founders can propose solutions anonymously or openly."
+        )
 
         for challenge in challenges:
             st.markdown(f"### {challenge['title']}")
             st.write(challenge['description'])
             st.write("---")
 
-    # 3.3. View Submitted Ideas tab --------------------------------------------
+    # --- Tab 3: View Submitted Solutions (with voting) ---
     with tab3:
-        st.subheader("Community-Submitted Ideas")
-        st.markdown("Upvote the ideas you find promising!")
+        st.subheader("Community-Submitted Solutions")
+        st.markdown("Upvote the solutions you find promising! VCs can see top-voted ideas.")
 
-        # Display each idea with a vote button
         for i, idea in enumerate(submitted_ideas):
             st.markdown(f"**Title:** {idea['title']}")
             st.markdown(f"**Description:** {idea['description']}")
-            st.markdown(f"**Tags:** {idea['tags'] if idea['tags'] else 'N/A'}")
+            st.markdown(f"**Tags:** {', '.join(idea['tags']) if idea['tags'] else 'N/A'}")
             st.markdown(f"**Votes:** {idea['votes']}")
             st.markdown(f"**Investor Backed?** {'Yes' if idea['investor_backed'] else 'No'}")
 
-            if st.button(f"Upvote {idea['title']}", key=f"upvote_{i}"):
+            if st.button(f"Upvote '{idea['title']}'", key=f"upvote_{i}"):
                 submitted_ideas[i]['votes'] += 1
                 st.success(f"You upvoted '{idea['title']}'!")
             st.write("---")
