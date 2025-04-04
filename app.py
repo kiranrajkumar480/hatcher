@@ -1,11 +1,11 @@
-from openai import OpenAI
 import streamlit as st
+import requests
 
-# --- 1. Initialize OpenAI Client with v1 SDK ---
-client = OpenAI(api_key="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")  # replace with st.secrets["OPENAI_API_KEY"] on Streamlit Cloud
+# --- 1. Groq API Setup ------------------------------------------------------------
+GROQ_API_KEY = st.secrets["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"]  # Add this in Streamlit Cloud Secrets
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# --- 2. Mock Data ----------------------------------------------------------------
-
+# --- 2. Mock Data ------------------------------------------------------------------
 vc_list = [
     {"name": "OpenFound", "focus": "AI/Healthcare"},
     {"name": "Greentech Ventures", "focus": "Climate/Environmental"},
@@ -45,25 +45,29 @@ submitted_ideas = [
     }
 ]
 
-# --- 3. OpenAI GPT Function -----------------------------------------------------
-
-def generate_ai_ideas(user_prompt: str) -> str:
+# --- 3. Groq Chat Completion Function ----------------------------------------------
+def generate_ai_ideas(prompt):
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "mixtral-8x7b-32768",
+        "messages": [
+            {"role": "system", "content": "You are an AI that identifies real-world startup problems from research, news, and trends."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 500
+    }
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are an AI that finds validated real-world startup problems by researching news, forums, and failure case studies."},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.7,
-            max_tokens=300
-        )
-        return response.choices[0].message.content.strip()
+        response = requests.post(GROQ_API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"❌ Error generating response: {e}"
 
-# --- 4. Streamlit App Layout -----------------------------------------------------
-
+# --- 4. Streamlit App Layout --------------------------------------------------------
 def main():
     st.set_page_config(page_title="Hatcher MVP", layout="wide")
 
